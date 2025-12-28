@@ -1,5 +1,9 @@
-handle only handles external events like mouse and window closing OUTSIDE GAME LOOP no movement or gamelogic
-update works with updating the siumulation form physics to player position and etc timer etc etc
-render is used to take that information and draw it to the screen
+#Reinfocement learning based Flappy bird:
 
-Game class[func run (func handle-> func update-> func render)]
+This is a flappy bird game wrapped around a gymnasium and stablebaseline3 to implement a reinforcement learning model and while learning how it all processes.
+
+[0.1v]
+
+Early stages of flappy bird. currently learing how to implement good coding practices and trying to understand under the hood working of a game engine. Hence, the purpose of this project.
+
+
