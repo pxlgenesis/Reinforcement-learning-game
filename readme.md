@@ -6,4 +6,12 @@ This is a flappy bird game wrapped around a gymnasium and stablebaseline3 to imp
 
 Early stages of flappy bird. currently learing how to implement good coding practices and trying to understand under the hood working of a game engine. Hence, the purpose of this project.
 
+[0.1.rev01]
 
+Bird flaps and rotates but ive used very crude coding methods it would improve once the game setting if formalized and basic skeleton is finished.
+
+[0.1.rev02]
+
+-Bird flaps and rotates but now the delta time calculation and entire physics calculation is frame independent plus neater code. 
+-Pipe assets for sky and ground.
+-Pipes MOVE yooo
