@@ -2,7 +2,6 @@ import pygame
 import sys
 import random
 
-
 vector = pygame.math.Vector2
 
 class Game: #Game Structure template OOPS compliant indeed
@@ -26,6 +25,7 @@ class Game: #Game Structure template OOPS compliant indeed
         self.Bird_vel_bwn_img = pygame.image.load(r"assets\Bird_idle_2.png")
         self.Bird_vel_down_img = pygame.image.load(r"assets\Bird_idle_3.png")
         self.ground_img = pygame.image.load(r"assets\ground.png") #ground image asset size is larger than background maybe due the way its drawn or
+        self.pause_img_hud = pygame.image.load(r"assets\pause.png")
 
         # Using the transform library in pygame rescale image (note: doesnt blur can used filters in the future for a diff pixel game)
         self.background_img = pygame.transform.scale_by(self.background_img,3)
@@ -35,14 +35,21 @@ class Game: #Game Structure template OOPS compliant indeed
         self.Bird_vel_bwn_img = pygame.transform.scale_by(self.Bird_vel_bwn_img,2)
         self.Bird_vel_down_img = pygame.transform.scale_by(self.Bird_vel_down_img,2)        
         self.ground_img = pygame.transform.scale_by(self.ground_img,3)
+        self.pause_img_hud = pygame.transform.scale_by(self.pause_img_hud,3)
 
         self.background_rect = self.background_img.get_rect()
         self.Pipe_rect = self.Pipe_img.get_rect()
         self.Pipe_rev_rect = self.Pipe_img.get_rect()
         self.Bird_rect = self.Bird_vel_bwn_img.get_rect()
         self.ground_rect = self.ground_img.get_rect()
+        self.pause_img_hud_rect = self.pause_img_hud.get_rect()
+        
+        FONT_SIZE = 32 #px
 
-        #bird rotation default angle
+        # Font
+        self.font_score = pygame.font.Font(r'assets\font\RasterForgeRegular.ttf',FONT_SIZE)
+
+        # Bird rotation default angle
         self.bird_rot_angle = 0
 
         # Dev mode bool
@@ -59,6 +66,7 @@ class Game: #Game Structure template OOPS compliant indeed
         self.pipe_x_speed = 0
         self.pipes_config = [[],[],[],[],[]] # type: ignore
         self.score_count = 0
+        self.pause = False
 
 
 
@@ -78,7 +86,7 @@ class Game: #Game Structure template OOPS compliant indeed
             y = int(self.height * i / 10)
             pygame.draw.line(
                 self.screen,
-                "red",
+                "magenta",
                 (0, y),
                 (self.width, y),
                 2
@@ -89,7 +97,7 @@ class Game: #Game Structure template OOPS compliant indeed
             x = int(self.width * j / 16)
             pygame.draw.line(
                 self.screen,
-                "red",
+                "magenta",
                 (x,0),
                 (x,self.height),
                 2
@@ -149,17 +157,28 @@ class Game: #Game Structure template OOPS compliant indeed
 
             
         for pipe_num in range(0,5):
+
+            # Drawing all pipes every single frame
             self.screen.blit(self.Pipe_img,(self.pipes_config[pipe_num][0],self.pipes_config[pipe_num][1]))
             self.screen.blit(self.Pipe_rev_img,(self.pipes_config[pipe_num][2],self.pipes_config[pipe_num][3]))
 
+            # Drawing bounding boxes and Scoring area for all boxes
             if self.dev_mode == True:
                 # Ground pipe Blue outlines
                 pygame.draw.line(self.screen,"red",(self.pipes_config[pipe_num][0],self.pipes_config[pipe_num][1]),(self.pipes_config[pipe_num][0],self.pipes_config[pipe_num][1]+self.Pipe_img.get_size()[1]),3)
                 pygame.draw.line(self.screen,"red",(self.pipes_config[pipe_num][0]+self.Pipe_img.get_size()[0],self.pipes_config[pipe_num][1]),(self.pipes_config[pipe_num][0]+self.Pipe_img.get_size()[0],self.pipes_config[pipe_num][1]+self.Pipe_img.get_size()[1]),3)
                 pygame.draw.line(self.screen,"red",(self.pipes_config[pipe_num][0],self.pipes_config[pipe_num][1]),(self.pipes_config[pipe_num][0]+self.Pipe_img.get_size()[0],self.pipes_config[pipe_num][1]),3)
+                pygame.draw.line(self.screen,"red",(self.pipes_config[pipe_num][0],self.pipes_config[pipe_num][1]+self.Pipe_img.get_size()[1]),(self.pipes_config[pipe_num][0]+self.Pipe_img.get_size()[0],self.pipes_config[pipe_num][1]),3)
                 
-        
-        
+                pygame.draw.line(self.screen,"red",(self.pipes_config[pipe_num][2],self.pipes_config[pipe_num][3]),(self.pipes_config[pipe_num][2],self.pipes_config[pipe_num][3]+self.Pipe_img.get_size()[1]),3)
+                pygame.draw.line(self.screen,"red",(self.pipes_config[pipe_num][2]+self.Pipe_img.get_size()[0],self.pipes_config[pipe_num][3]),(self.pipes_config[pipe_num][2]+self.Pipe_img.get_size()[0],self.pipes_config[pipe_num][3]+self.Pipe_img.get_size()[1]),3)
+                pygame.draw.line(self.screen,"red",(self.pipes_config[pipe_num][2],self.pipes_config[pipe_num][3]+self.Pipe_img.get_size()[1]),(self.pipes_config[pipe_num][2]+self.Pipe_img.get_size()[0],self.pipes_config[pipe_num][3]+self.Pipe_img.get_size()[1]),3)
+                pygame.draw.line(self.screen,"red",(self.pipes_config[pipe_num][2],self.pipes_config[pipe_num][3]+self.Pipe_img.get_size()[1]),(self.pipes_config[pipe_num][2]+self.Pipe_img.get_size()[0],self.pipes_config[pipe_num][3]),3)
+
+                # Green space rect
+                green_score_rect = pygame.Rect(self.pipes_config[pipe_num][2],self.pipes_config[pipe_num][3]+self.Pipe_img.get_size()[1],self.Pipe_img.get_size()[0],self.Pipe_img.get_size()[1]*3/4)
+
+                pygame.draw.rect(self.screen,"green",green_score_rect,3)
 
     def dev_boxes(self): ##################### Object Outline Render ###########################
         
@@ -177,8 +196,23 @@ class Game: #Game Structure template OOPS compliant indeed
         pygame.draw.line(self.screen,"green",(self.player_rect[0],self.pos_y),(self.player_rect[0],self.pos_y + self.Bird_vel_bwn_img.get_rect()[2]),2) #left
         pygame.draw.line(self.screen,"green",(self.player_rect[0]+self.Bird_vel_bwn_img.get_rect()[3],self.pos_y),(self.player_rect[0]+self.Bird_vel_bwn_img.get_rect()[3],self.pos_y+ self.Bird_vel_bwn_img.get_rect()[2]),2) #right
 
+    def hud(self, score_num: int): #################### Hud Render ###########################
 
-    def render(self):
+        # Hud Position
+
+        SCORE_POS: tuple[ int, float] = ( int(self.width * 1 / 16) , self.height * 9 / 10)
+
+        # Text is being rendered and stored as an image each time its being displayed
+        score_render = self.font_score.render(f"SCORE : {score_num}",False,"white",None)
+        score_render_rect = score_render.get_rect().center
+        score_render_rect = (SCORE_POS)
+        self.screen.blit(score_render,score_render_rect)
+        
+        if self.pause == True:
+            self.screen.blit(self.pause_img_hud,self.pause_img_hud_rect)
+
+
+    def render(self): #################### Render Main ###########################
         
         # Loading Background and cleaning using black
         self.screen.fill("black")
@@ -199,11 +233,13 @@ class Game: #Game Structure template OOPS compliant indeed
         self.pipe_draw()
         # Draw Ground
         self.draw_ground()
-            
+        self.hud(self.score_count)
+
         
         #Update all parts of the display
         pygame.display.update()
         #pygame.display.update() [to update only certain parts]
+        
 
 ############################################ Render Block End ###################################################################
 
@@ -222,7 +258,7 @@ class Game: #Game Structure template OOPS compliant indeed
             if event.type == pygame.QUIT: 
                     self.game_running = False
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
+                if (event.key == pygame.K_SPACE) and (self.pause == False):
                     self.velocity.y = JUMP_VELOCITY     
                 if event.key == pygame.K_2 and self.dev_mode == False:
                     self.dev_mode = True        
@@ -230,6 +266,9 @@ class Game: #Game Structure template OOPS compliant indeed
                     self.dev_mode = False  
                 if event.key == pygame.K_r:
                     self.game_state_reset()
+                if event.key == pygame.K_p:
+                    self.game_state_pause()
+                    
                     
         #this would be used if i want to detect this per frame but i only need to detect it once hence event type.
         #Get status of keys
@@ -286,7 +325,7 @@ class Game: #Game Structure template OOPS compliant indeed
                 self.pipes_config[i].append(PIPE_GND_Y)
                 self.pipes_config[i].append(CMN_PIPE_X)
                 self.pipes_config[i].append(PIPE_SKY_Y)
-                self.pipes_config[i].append(False)
+                self.pipes_config[i].append(True)
         
         # Update and reuse pipes
         for i in range(0,5):
@@ -312,6 +351,7 @@ class Game: #Game Structure template OOPS compliant indeed
                 self.pipes_config[i][2] = self.width  
                 self.pipes_config[i][1] = (self.height * gnd_y )/10 
                 self.pipes_config[i][3] = (self.height * 0 ) / 10 - (self.height * sky_y )/10  
+                self.pipes_config[i][4] = True
 
 
 
@@ -345,10 +385,26 @@ class Game: #Game Structure template OOPS compliant indeed
             if player_rect.colliderect(pipe_sky):
                 self.game_state_quit()
 
-    def score_counter(self):
-        
-        
-        self.score_count += 1 
+    def score_counter(self): #################### Counter Based Logic ###########################
+
+        PLAYER_X_POS = (self.width*5)/16
+
+        player_rect = pygame.Rect(PLAYER_X_POS,
+                                  self.pos_y,
+                                  self.Bird_vel_bwn_img.get_size()[0],
+                                  self.Bird_vel_bwn_img.get_size()[1])
+
+        for pipe_num in range(0,5):
+            
+            green_score_rect = pygame.Rect(self.pipes_config[pipe_num][2],
+                                           self.pipes_config[pipe_num][3]+self.Pipe_img.get_size()[1],
+                                           self.Pipe_img.get_size()[0],
+                                           self.Pipe_img.get_size()[1]*3/4)    
+            
+            if self.pipes_config[pipe_num][4] == True and player_rect.colliderect(green_score_rect):
+                self.score_count += 1        
+                self.pipes_config[pipe_num][4] = False
+         
         
     
     
@@ -373,25 +429,29 @@ class Game: #Game Structure template OOPS compliant indeed
 
         # Velocity Bird
         self.accelation = GRAVITY 
-        self.velocity.y += self.accelation * self.dt # Velocity is px/frame in short
+        
+        if self.pause == False:
+            self.velocity.y += self.accelation * self.dt # Velocity is px/frame in short
         
         if self.velocity.y > MAX_VELOCITY:
             self.velocity.y = MAX_VELOCITY
         
-        self.pos_y += self.velocity.y * self.dt # Updating Y positon
+        if self.pause == False: 
+            self.pos_y += self.velocity.y * self.dt # Updating Y positon
 
         # Pipe Speed and Generation
-        self.pipe_x_speed = PIPE_SPD * self.dt
+        if self.pause == False:
+            self.pipe_x_speed = PIPE_SPD * self.dt
 
-        self.pipe_generation()
+            self.pipe_generation()
         self.Collision()
+        self.score_counter()
 
         # Ground - Simple 2D scrolling by using 2 images and upating their values based on if it touches the end or not.
-        self.gnd_x += GROUND_SPD * self.dt
+        if self.pause == False:
+            self.gnd_x += GROUND_SPD * self.dt
         if self.gnd_x >= self.width:
             self.gnd_x = 0 
-
-        # Collision
         
         
 
@@ -435,7 +495,15 @@ class Game: #Game Structure template OOPS compliant indeed
     def game_state_quit(self):
         pygame.quit
         sys.exit()
-            
+    
+    def game_state_pause(self):
+        if self.pause == False:
+            self.pause = True
+            return
+        if self.pause == True:
+            self.pause = False
+            return 
+        print(f"{self.pause}")   
         
 
 def main():
