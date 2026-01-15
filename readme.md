@@ -15,3 +15,11 @@ Bird flaps and rotates but ive used very crude coding methods it would improve o
 -Bird flaps and rotates but now the delta time calculation and entire physics calculation is frame independent plus neater code. 
 -Pipe assets for sky and ground.
 -Pipes MOVE yooo
+
+[0.1.rev03]
+
+-Bird physics finalized.
+-Endless Random pipe generation works.
+-Game resetting works
+-Improved coding practices to make a more modular yet independent system for future integration with gymnasium.
+-I CAN PAUSE THE GAME

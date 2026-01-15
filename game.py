@@ -1,5 +1,6 @@
 import pygame 
 import sys
+import random
 
 
 vector = pygame.math.Vector2
@@ -11,12 +12,12 @@ class Game: #Game Structure template OOPS compliant indeed
         pygame.init() #initialize all pygame modules to check
 
         self.height = height 
-        self.width = width
+        self.width = width  
         
         self.screen = pygame.display.set_mode((self.width,self.height)) #Game Window size 
         self.clock = pygame.time.Clock()
         self.game_running = True
-        self.fps = 144 #bruh ive done something as frame effects velocity prolly clock related ill work on that in the future
+        self.fps = 240 #bruh ive done something as frame effects velocity prolly clock related ill work on that in the future
 
         self.background_img = pygame.image.load(r"assets/background.png") #USE [r""] for raw strings
         self.Pipe_img = pygame.image.load(r"assets\Pipe_16x64.png")
@@ -41,8 +42,6 @@ class Game: #Game Structure template OOPS compliant indeed
         self.Bird_rect = self.Bird_vel_bwn_img.get_rect()
         self.ground_rect = self.ground_img.get_rect()
 
-        self.test = 0
-
         #bird rotation default angle
         self.bird_rot_angle = 0
 
@@ -57,16 +56,22 @@ class Game: #Game Structure template OOPS compliant indeed
         self.dt = 0
         self.pos_y= (self.background_img.get_rect()[3]-self.ground_img.get_rect()[3])/2 #(480 - (480*7)/10)/2
         self.gnd_x = 0 # ground x pos initialization
+        self.pipe_x_speed = 0
+        self.pipes_config = [[],[],[],[],[]] # type: ignore
+        self.score_count = 0
 
 
 
-    def background_draw(self): #################### Background Render ###########################
+
+###################################################### Render Block #####################################################################
+
+    def background_draw(self): #################### Background Render #############################
         
         self.screen.blit(self.background_img,self.background_rect)
 
 
 
-    def grid_dev(self): #################### Grid Render ###########################
+    def grid_dev_draw(self): #################### Grid Render ###########################
         
         # Draws grid vertically
         for i in range(1, 11):
@@ -92,11 +97,20 @@ class Game: #Game Structure template OOPS compliant indeed
 
 
 
-    def draw_ground(self): #################### ground Render ###########################
+    def draw_ground(self): #################### Ground Render ###########################
 
-        #draw rect
-        move_ground_1 = pygame.Rect(self.gnd_x,(self.height*7)/10,self.ground_img.get_rect()[2],self.ground_img.get_rect()[3])
-        move_ground_2 = pygame.Rect(self.gnd_x-self.width,(self.height*7)/10,self.ground_img.get_rect()[2],self.ground_img.get_rect()[3])
+        GRN_Y_DRAW = (self.height*7)/10
+
+        # Ground Position
+        move_ground_1 = pygame.Rect(self.gnd_x,
+                                    GRN_Y_DRAW,
+                                    self.ground_img.get_rect()[2],
+                                    self.ground_img.get_rect()[3])
+        
+        move_ground_2 = pygame.Rect(self.gnd_x-self.width,
+                                    GRN_Y_DRAW,
+                                    self.ground_img.get_rect()[2],
+                                    self.ground_img.get_rect()[3])
 
         #draw ground [note could be an issue with a little jitter, use group sprite next time] not on my pc tho as of right now
         self.screen.blit(self.ground_img,move_ground_1)
@@ -106,9 +120,14 @@ class Game: #Game Structure template OOPS compliant indeed
 
     def player_draw(self): #################### Player Render ###########################
         
+        PLAYER_X_POS = (self.width*5)/16
+
         # Player sprite size
         bird_sprite_size = self.Bird_vel_bwn_img.get_size() #bird_sprite_size: tuple[int, int] = (self.Bird_vel_bwn_img.get_rect()[2],self.Bird_vel_bwn_img.get_rect()[3]) 
-        self.player_rect = pygame.Rect((self.width*5)/16,self.pos_y,*bird_sprite_size)
+        
+        self.player_rect = pygame.Rect(PLAYER_X_POS
+                                       ,self.pos_y,
+                                       *bird_sprite_size)
 
         # Bird sprite state 
         if self.velocity.y > 100:
@@ -119,53 +138,84 @@ class Game: #Game Structure template OOPS compliant indeed
             self.bird_img_final = self.Bird_vel_bwn_img
 
         # Current sprite state Rotation and draw
-        self.bird_img_final = pygame.transform.rotate(self.bird_img_final,self.bird_rot_angle)
-        self.screen.blit(self.bird_img_final,self.player_rect)
+        self.bird_img_final = pygame.transform.rotate(self.bird_img_final,
+                                                      self.bird_rot_angle)
+        self.screen.blit(self.bird_img_final,
+                         self.player_rect)
         
 
 
     def pipe_draw(self): #################### Pipe Render ###########################
+
+            
+        for pipe_num in range(0,5):
+            self.screen.blit(self.Pipe_img,(self.pipes_config[pipe_num][0],self.pipes_config[pipe_num][1]))
+            self.screen.blit(self.Pipe_rev_img,(self.pipes_config[pipe_num][2],self.pipes_config[pipe_num][3]))
+
+            if self.dev_mode == True:
+                # Ground pipe Blue outlines
+                pygame.draw.line(self.screen,"red",(self.pipes_config[pipe_num][0],self.pipes_config[pipe_num][1]),(self.pipes_config[pipe_num][0],self.pipes_config[pipe_num][1]+self.Pipe_img.get_size()[1]),3)
+                pygame.draw.line(self.screen,"red",(self.pipes_config[pipe_num][0]+self.Pipe_img.get_size()[0],self.pipes_config[pipe_num][1]),(self.pipes_config[pipe_num][0]+self.Pipe_img.get_size()[0],self.pipes_config[pipe_num][1]+self.Pipe_img.get_size()[1]),3)
+                pygame.draw.line(self.screen,"red",(self.pipes_config[pipe_num][0],self.pipes_config[pipe_num][1]),(self.pipes_config[pipe_num][0]+self.Pipe_img.get_size()[0],self.pipes_config[pipe_num][1]),3)
+                
         
-        # Pipe sprite coordinates
-        pipe_crd: tuple[ float, float, float, float] = (self.width - self.gnd_x ,(self.height*6)/10 ,self.width - self.gnd_x ,(self.height*0)/10 - (self.height*1)/10)
-
         
 
-        self.screen.blit(self.Pipe_img,(pipe_crd[0],pipe_crd[1]))
-        self.screen.blit(self.Pipe_rev_img,(pipe_crd[2],pipe_crd[3]))
-
-        self.screen.blit(self.Pipe_img,(pipe_crd[0]+(self.width*3)/16,pipe_crd[1]))
-        self.screen.blit(self.Pipe_rev_img,(pipe_crd[2]+(self.width*4)/16,pipe_crd[3]))
-
-        self.screen.blit(self.Pipe_img,(pipe_crd[0]+(self.width*6)/16,pipe_crd[1]))
-        self.screen.blit(self.Pipe_rev_img,(pipe_crd[2]+(self.width*8)/16,pipe_crd[3]))
-
-        self.screen.blit(self.Pipe_img,(pipe_crd[0]+(self.width*9)/16,pipe_crd[1]))
-        self.screen.blit(self.Pipe_rev_img,(pipe_crd[2]+(self.width*12)/16,pipe_crd[3]))
-
-
-    def dev_boxes(self): ##################### Pipe Render ###########################
+    def dev_boxes(self): ##################### Object Outline Render ###########################
         
         """render all of the boxes for player,gnd and pipe collosion and more""" # """ used for 
         
-        # Collision line ground
-        pygame.draw.line(self.screen,"blue",(0,(self.height*7)/10),(self.ground_rect[2],(self.height*7)/10),2)
+        # GROUND COLLISON LINE
+        pygame.draw.line(self.screen,"red",(0,(self.height*7)/10),(self.ground_rect[2],(self.height*7)/10),2)
 
-        # Collision line sky
-        pygame.draw.line(self.screen,"blue",(0,0),(self.ground_rect[2],0),2)  
+        # SKY COLLISON LINE
+        pygame.draw.line(self.screen,"red",(0,0),(self.ground_rect[2],0),2)  
         
-        # Collision box render
-        pygame.draw.line(self.screen,"blue",(self.player_rect[0],self.pos_y),(self.player_rect[0]+self.Bird_vel_bwn_img.get_rect()[3],self.pos_y),2) #top
-        pygame.draw.line(self.screen,"blue",(self.player_rect[0],self.pos_y + self.Bird_vel_bwn_img.get_rect()[2]),(self.player_rect[0]+self.Bird_vel_bwn_img.get_rect()[3],self.pos_y+ self.Bird_vel_bwn_img.get_rect()[2]),2) #bottom
-        pygame.draw.line(self.screen,"blue",(self.player_rect[0],self.pos_y),(self.player_rect[0],self.pos_y + self.Bird_vel_bwn_img.get_rect()[2]),2) #left
-        pygame.draw.line(self.screen,"blue",(self.player_rect[0]+self.Bird_vel_bwn_img.get_rect()[3],self.pos_y),(self.player_rect[0]+self.Bird_vel_bwn_img.get_rect()[3],self.pos_y+ self.Bird_vel_bwn_img.get_rect()[2]),2) #right
+        # BIRD COLLISION BOX
+        pygame.draw.line(self.screen,"green",(self.player_rect[0],self.pos_y),(self.player_rect[0]+self.Bird_vel_bwn_img.get_rect()[3],self.pos_y),2) #top
+        pygame.draw.line(self.screen,"green",(self.player_rect[0],self.pos_y + self.Bird_vel_bwn_img.get_rect()[2]),(self.player_rect[0]+self.Bird_vel_bwn_img.get_rect()[3],self.pos_y+ self.Bird_vel_bwn_img.get_rect()[2]),2) #bottom
+        pygame.draw.line(self.screen,"green",(self.player_rect[0],self.pos_y),(self.player_rect[0],self.pos_y + self.Bird_vel_bwn_img.get_rect()[2]),2) #left
+        pygame.draw.line(self.screen,"green",(self.player_rect[0]+self.Bird_vel_bwn_img.get_rect()[3],self.pos_y),(self.player_rect[0]+self.Bird_vel_bwn_img.get_rect()[3],self.pos_y+ self.Bird_vel_bwn_img.get_rect()[2]),2) #right
 
 
+    def render(self):
+        
+        # Loading Background and cleaning using black
+        self.screen.fill("black")
+        
+        # Draw background
+        self.background_draw()
+
+        # Draw Player
+        self.player_draw()
+        
+
+        #draw development boxes
+        if self.dev_mode == True:
+            self.grid_dev_draw()
+            self.dev_boxes()
+
+        # Draw pipe
+        self.pipe_draw()
+        # Draw Ground
+        self.draw_ground()
+            
+        
+        #Update all parts of the display
+        pygame.display.update()
+        #pygame.display.update() [to update only certain parts]
+
+############################################ Render Block End ###################################################################
+
+
+
+
+############################################ Input Handler Start ################################################################
 
     def handle(self): #################### Check Player Input ###########################
         
         # Constants
-        JUMP_VELOCITY = -350
+        JUMP_VELOCITY = -400
 
         #Game Termination event.
         for event in pygame.event.get():
@@ -178,7 +228,9 @@ class Game: #Game Structure template OOPS compliant indeed
                     self.dev_mode = True        
                 if event.key == pygame.K_1 and self.dev_mode == True:
                     self.dev_mode = False  
-
+                if event.key == pygame.K_r:
+                    self.game_state_reset()
+                    
         #this would be used if i want to detect this per frame but i only need to detect it once hence event type.
         #Get status of keys
         #self.keys = pygame.key.get_pressed()
@@ -187,29 +239,91 @@ class Game: #Game Structure template OOPS compliant indeed
         #if self.keys[pygame.K_SPACE]:
         #    self.velocity.y = -3
 
+############################################ Input Handler Block End ##############################################################
 
 
-    def update(self): #################### Simulation Loop ###########################
 
-        # Constants
-        GROUND_SPD = 140
-        GRAVITY = 1000 # based px/sec
-        MAX_VELOCITY = 500
 
-        # Current delta time calculation and last_time updation
-        self.dt = self.clock.tick(self.fps)/1000
+
+############################################ Simulation Block Start ###############################################################
+    
+    def pipe_generation(self): ############################################ Simulation Block Start ###############################
+
+        VALID_PIPES_ORIENTATIONS = [[5,2],[6,1],[4,3]]
+        PIPE_GEN_END = -self.width * 4/16
+        PIPE_GEN_START = -self.width*1/16
+        PIPE_SEP = 5
+
+        # Initialize Pipes
+        if self.pipes_config[0] == []:
+            
+            for i in range(0,5):
+                
+                gnd_y = 0
+                sky_y = 0
+
+                # Decides random initializing orientation of pipes
+                RND_PIPE = random.randint(1,3)
+                if RND_PIPE == 1:
+                    gnd_y = VALID_PIPES_ORIENTATIONS[0][0]
+                    sky_y = VALID_PIPES_ORIENTATIONS[0][1]
+                if RND_PIPE == 2:
+                    gnd_y = VALID_PIPES_ORIENTATIONS[1][0]
+                    sky_y = VALID_PIPES_ORIENTATIONS[1][1]
+                if RND_PIPE == 3:
+                    gnd_y = VALID_PIPES_ORIENTATIONS[2][0]
+                    sky_y = VALID_PIPES_ORIENTATIONS[2][1]
+                
+                self.pipe_x_speed = PIPE_GEN_START
+                CMN_PIPE_X = self.width - self.pipe_x_speed + (self.width * (PIPE_SEP * i)/20 )
+                
+                PIPE_GND_Y = (self.height * gnd_y )/10 
+                PIPE_SKY_Y = (self.height * 0 ) / 10 - (self.height * sky_y )/10
+                
+                # [ gnd x, gnd y, sky x, sky y]
+
+                self.pipes_config[i].append(CMN_PIPE_X)
+                self.pipes_config[i].append(PIPE_GND_Y)
+                self.pipes_config[i].append(CMN_PIPE_X)
+                self.pipes_config[i].append(PIPE_SKY_Y)
+                self.pipes_config[i].append(False)
         
-        # [new_value = new_min + value * (new_max - new_min)] rotation angle transformtion from velocity to rotation
-        PRCNT_VAL = (self.velocity.y / MAX_VELOCITY)
-        self.bird_rot_angle = 30 + (PRCNT_VAL) * (-30-(30))
+        # Update and reuse pipes
+        for i in range(0,5):
         
-        # Accelation
-        self.accelation = GRAVITY 
-        self.velocity.y += self.accelation * self.dt # Velocity is px/frame in short
+            self.pipes_config[i][0] -= self.pipe_x_speed 
+            self.pipes_config[i][2] -= self.pipe_x_speed 
+            if int(self.pipes_config[i][0]) <= PIPE_GEN_END:
+                gnd_y = 0
+                sky_y = 0
 
-        if self.velocity.y > MAX_VELOCITY:
-            self.velocity.y = MAX_VELOCITY
+                # Randomization of pipes
+                RND_PIPE = random.randint(1,3)
+                if RND_PIPE == 1:
+                    gnd_y = VALID_PIPES_ORIENTATIONS[0][0]
+                    sky_y = VALID_PIPES_ORIENTATIONS[0][1]
+                if RND_PIPE == 2:
+                    gnd_y = VALID_PIPES_ORIENTATIONS[1][0]
+                    sky_y = VALID_PIPES_ORIENTATIONS[1][1]
+                if RND_PIPE == 3:
+                    gnd_y = VALID_PIPES_ORIENTATIONS[2][0]
+                    sky_y = VALID_PIPES_ORIENTATIONS[2][1]
+                self.pipes_config[i][0] = self.width
+                self.pipes_config[i][2] = self.width  
+                self.pipes_config[i][1] = (self.height * gnd_y )/10 
+                self.pipes_config[i][3] = (self.height * 0 ) / 10 - (self.height * sky_y )/10  
+
+
+
+    def Collision(self): #################### Collison Based Logic ###########################
         
+        PLAYER_X_POS = (self.width*5)/16
+
+        player_rect = pygame.Rect(PLAYER_X_POS,
+                                  self.pos_y,
+                                  self.Bird_vel_bwn_img.get_size()[0],
+                                  self.Bird_vel_bwn_img.get_size()[1])
+
         # Collision detection of ground
         if (self.pos_y +self.Bird_vel_bwn_img.get_rect()[3]) > (self.height * 7)/10:
                 pygame.QUIT
@@ -219,54 +333,108 @@ class Game: #Game Structure template OOPS compliant indeed
         if (self.pos_y ) < 0:
                 pygame.QUIT
                 sys.exit()
+        for pipe_num in range(0,5):
+            
+            pipe_gnd = pygame.Rect(self.pipes_config[pipe_num][0],self.pipes_config[pipe_num][1],*self.Pipe_rev_img.get_size())
+            pipe_sky = pygame.Rect(self.pipes_config[pipe_num][2],self.pipes_config[pipe_num][3],*self.Pipe_rev_img.get_size())
+            
 
-        # Updating Y positon
-        self.pos_y += self.velocity.y * self.dt
 
+            if player_rect.colliderect(pipe_gnd):
+                self.game_state_quit()
+            if player_rect.colliderect(pipe_sky):
+                self.game_state_quit()
+
+    def score_counter(self):
         
-        # Simple 2D scrolling by using 2 images and upating their values based on if it touches the end or not.
+        
+        self.score_count += 1 
+        
+    
+    
+
+
+    def update(self): #################### Simulation Loop ###########################
+
+        # Constants
+        GROUND_SPD = 140
+        GRAVITY = 1000 # based px/sec
+        MAX_VELOCITY = 500
+        BIRD_DEGREE = 20 #45 is too much, 30 looks weird =<25 is best
+        PIPE_SPD = 200
+        
+        # Current delta time calculation and last_time updation
+        self.dt = self.clock.tick(self.fps)/1000
+        
+        
+        # Bird Rotation Calculation
+        PRCNT_VAL = (self.velocity.y / MAX_VELOCITY)
+        self.bird_rot_angle = BIRD_DEGREE + (PRCNT_VAL) * (- BIRD_DEGREE - (BIRD_DEGREE)) # [new_value = new_min + value * (new_max - new_min)] rotation angle transformtion from velocity to rotation.
+
+        # Velocity Bird
+        self.accelation = GRAVITY 
+        self.velocity.y += self.accelation * self.dt # Velocity is px/frame in short
+        
+        if self.velocity.y > MAX_VELOCITY:
+            self.velocity.y = MAX_VELOCITY
+        
+        self.pos_y += self.velocity.y * self.dt # Updating Y positon
+
+        # Pipe Speed and Generation
+        self.pipe_x_speed = PIPE_SPD * self.dt
+
+        self.pipe_generation()
+        self.Collision()
+
+        # Ground - Simple 2D scrolling by using 2 images and upating their values based on if it touches the end or not.
         self.gnd_x += GROUND_SPD * self.dt
         if self.gnd_x >= self.width:
             self.gnd_x = 0 
-                
 
-        # Loading Background and cleaning using black
-        self.screen.fill("black")
+        # Collision
         
-        # Draw background func
-        self.background_draw()
-
-        # Call player draw 
-        self.player_draw()
-
-        #Load pipe
-        self.pipe_draw()
-
-        #Load ground
-        self.draw_ground()
-
-        #draw development boxes
-        if self.dev_mode == True:
-            self.grid_dev()
-            self.dev_boxes()
-            
         
-        #Update all parts of the display
-        pygame.display.update()
-        #pygame.display.update() [to update only certain parts]
 
         #debug shi
-        print(f"bird_y:{int(self.pos_y)} | int(velocity:{int(self.velocity.y)}) | dt: {int(self.dt)} | {int(self.bird_rot_angle)} | {int(self.accelation)} | {self.velocity.x}")
+        #print(f"bird_y:{int(self.pos_y)} | int(velocity:{int(self.velocity.y)}) | dt: {int(self.dt)} | pipe_speed_x {int(self.pipe_x_speed)} | {int(-self.width * 4/16 )} | {self.pipes_config[0][0]}")
         
+############################################ Simulation Block End ###############################################################
 
 
-        
+
+
+############### Game Loop States ################     
+
     def run(self): #################### Game Loop ###########################
         
         while self.game_running:
             
             self.update()
-            self.handle()   
+            self.render()
+            self.handle() 
+
+    def game_state_reset(self):
+
+        #bird rotation default angle
+        self.bird_rot_angle = 0
+
+        # Dev mode bool
+        self.dev_mode = False
+
+        # Velocity and Accelation initilization
+        self.velocity = vector(0,0)
+        self.accelation = vector(0,0)
+
+        #Delta time initialization to 0
+        self.dt = 0
+        self.pos_y= (self.background_img.get_rect()[3]-self.ground_img.get_rect()[3])/2 #(480 - (480*7)/10)/2
+        self.gnd_x = 0 # ground x pos initialization
+        self.pipe_x_speed = 0
+        self.pipes_config = [[],[],[],[],[]] # type: ignore
+
+    def game_state_quit(self):
+        pygame.quit
+        sys.exit()
             
         
 
