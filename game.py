@@ -420,7 +420,7 @@ class Game: #Game Structure template OOPS compliant indeed
         PIPE_SPD = 200
         
         # Current delta time calculation and last_time updation
-        self.dt = self.clock.tick(self.fps)/1000
+        self.dt = 0.016 #self.clock.tick(self.fps)/1000 [this is for when we want to wait for a frame.] [right now we are using 0.016 value as to replicate 60fps per second to constantly run it at that speed as fast as we can to quickly go through the training as compared to waiting for the cpu to wait for the frame to render.] 
         
         
         # Bird Rotation Calculation
