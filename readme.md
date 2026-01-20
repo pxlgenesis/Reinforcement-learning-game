@@ -26,9 +26,9 @@ Libraries to install:
  Things to remember while setting it for training:
 
 1) Under game.update()
-    set delta time to A while training and B while Playing. if reversed it would be funny asf. 
-    A) self.dt = 0.016 
-    B) self.dt = self.clock.tick(self.fps)/1000  
+    - Set delta time to A while training and B while Playing. if reversed it would be funny asf. 
+    - Self.dt = 0.016 
+    - Self.dt = self.clock.tick(self.fps)/1000  
 
 2) To train a custom model.
     - Set model name to properly show your timesteps
